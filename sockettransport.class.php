@@ -214,23 +214,15 @@ class SocketTransport
 	 */
 	public function open()
 	{
-		if (!self::$forceIpv4) {
-			$socket6 = @socket_create(AF_INET6,SOCK_STREAM,SOL_TCP);
-			if ($socket6 == false) throw new SocketTransportException('Could not create socket; '.socket_strerror(socket_last_error()), socket_last_error());
-			socket_set_option($socket6,SOL_SOCKET,SO_SNDTIMEO,$this->millisecToSolArray(self::$defaultSendTimeout));
-			socket_set_option($socket6,SOL_SOCKET,SO_RCVTIMEO,$this->millisecToSolArray(self::$defaultRecvTimeout));
-		}
-		if (!self::$forceIpv6) {
-			$socket4 = @socket_create(AF_INET,SOCK_STREAM,SOL_TCP);
-			if ($socket4 == false) throw new SocketTransportException('Could not create socket; '.socket_strerror(socket_last_error()), socket_last_error());
-			socket_set_option($socket4,SOL_SOCKET,SO_SNDTIMEO,$this->millisecToSolArray(self::$defaultSendTimeout));
-			socket_set_option($socket4,SOL_SOCKET,SO_RCVTIMEO,$this->millisecToSolArray(self::$defaultRecvTimeout));
-		}
 		$it = new ArrayIterator($this->hosts);
 		while ($it->valid()) {
 			list($hostname,$port,$ip6s,$ip4s) = $it->current();
 			if (!self::$forceIpv4 && !empty($ip6s)) { // Attempt IPv6s first
 				foreach ($ip6s as $ip) {
+					$socket6 = @socket_create(AF_INET6,SOCK_STREAM,SOL_TCP);
+					if ($socket6 == false) throw new SocketTransportException('Could not create socket; '.socket_strerror(socket_last_error()), socket_last_error());
+					socket_set_option($socket6,SOL_SOCKET,SO_SNDTIMEO,$this->millisecToSolArray(self::$defaultSendTimeout));
+					socket_set_option($socket6,SOL_SOCKET,SO_RCVTIMEO,$this->millisecToSolArray(self::$defaultRecvTimeout));
 					if ($this->debug) call_user_func($this->debugHandler, "Connecting to $ip:$port...");
 					$r = @socket_connect($socket6, $ip, $port);
 					if ($r) {
@@ -246,6 +238,10 @@ class SocketTransport
 			if (!self::$forceIpv6 && !empty($ip4s)) {
 				foreach ($ip4s as $ip) {
 					if ($this->debug) call_user_func($this->debugHandler, "Connecting to $ip:$port...");
+					$socket4 = @socket_create(AF_INET,SOCK_STREAM,SOL_TCP);
+					if ($socket4 == false) throw new SocketTransportException('Could not create socket; '.socket_strerror(socket_last_error()), socket_last_error());
+					socket_set_option($socket4,SOL_SOCKET,SO_SNDTIMEO,$this->millisecToSolArray(self::$defaultSendTimeout));
+					socket_set_option($socket4,SOL_SOCKET,SO_RCVTIMEO,$this->millisecToSolArray(self::$defaultRecvTimeout));
 					$r = @socket_connect($socket4, $ip, $port);
 					if ($r) {
 						if ($this->debug) call_user_func($this->debugHandler, "Connected to $ip:$port!");
